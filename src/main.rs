@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 
 #[derive(Component)]
-struct NibblesName(String);
+struct WormName(String);
 
 #[derive(Component)]
 enum Direction {
@@ -13,8 +13,8 @@ enum Direction {
 
 
 #[derive(Bundle)]
-struct Nibbles {
-    name: NibblesName,
+struct Worm {
+    name: WormName,
     direction: Direction,
     #[bundle]
     sprite: SpriteBundle,
@@ -36,8 +36,8 @@ fn setup(
 ) {
     commands.spawn_bundle(Camera2dBundle::default());
 
-    commands.spawn_bundle(Nibbles{
-        name: NibblesName("Wormy".to_string()),
+    commands.spawn_bundle(Worm{
+        name: WormName("Wormy".to_string()),
         direction: Direction::Right,
         sprite: SpriteBundle {
             sprite: Sprite {
@@ -53,7 +53,7 @@ fn setup(
 fn controls(
     time: Res<Time>,
     keys: Res<Input<KeyCode>>,
-    mut query: Query<(&NibblesName, &mut Direction, &mut Transform)>,
+    mut query: Query<(&WormName, &mut Direction, &mut Transform)>,
 ) {
     for (name, mut direction, mut transform) in &mut query {
         match *direction {
