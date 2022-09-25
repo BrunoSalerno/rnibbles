@@ -11,11 +11,20 @@ enum Direction {
     Left
 }
 
-
 #[derive(Bundle)]
 struct Worm {
     name: WormName,
     direction: Direction,
+    #[bundle]
+    sprite: SpriteBundle,
+}
+
+#[derive(Component)]
+struct WormPartIndex(u8);
+
+#[derive(Bundle)]
+struct WormPart {
+    index: WormPartIndex,
     #[bundle]
     sprite: SpriteBundle,
 }
@@ -48,14 +57,48 @@ fn setup(
             ..default()
         }
     });
+
+    commands.spawn_bundle(WormPart{
+        index: WormPartIndex(0),
+        sprite: SpriteBundle {
+            sprite: Sprite {
+                color: Color::rgb(0.25, 0.25, 0.75),
+                custom_size: Some(Vec2::new(25.0, 25.0)),
+                ..default()
+            },
+            ..default()
+        }
+    });
+
+    commands.spawn_bundle(WormPart{
+        index: WormPartIndex(1),
+        sprite: SpriteBundle {
+            sprite: Sprite {
+                color: Color::rgb(0.25, 0.25, 0.75),
+                custom_size: Some(Vec2::new(25.0, 25.0)),
+                ..default()
+            },
+            transform: Transform::from_xyz(100., 0., 0.),
+            ..default()
+        }
+    });
 }
 
 fn controls(
     time: Res<Time>,
     keys: Res<Input<KeyCode>>,
     mut query: Query<(&WormName, &mut Direction, &mut Transform)>,
+    mut query_parts: Query<(&WormPartIndex, &mut Transform), Without<WormName>>,
 ) {
+    let mut orig_x:f32 = 0.;
+    let mut orig_y:f32 = 0.;
+    let mut old_orig_x:f32 = 0.;
+    let mut old_orig_y:f32 = 0.;
+
     for (name, mut direction, mut transform) in &mut query {
+        orig_x = transform.translation.x;
+        orig_y = transform.translation.y;
+
         match *direction {
             Direction::Up => transform.translation.y += 150. * time.delta_seconds(),
             Direction::Down => transform.translation.y -= 150. * time.delta_seconds(),
@@ -75,5 +118,14 @@ fn controls(
         if keys.pressed(KeyCode::W) {
             *direction = Direction::Up
         }
+    }
+
+    for (index, mut transform) in &mut query_parts {
+       old_orig_x = transform.translation.x;
+       old_orig_y = transform.translation.y;
+       transform.translation.x = orig_x;
+       transform.translation.y = orig_y;
+       orig_x = old_orig_x;
+       orig_y = old_orig_y;
     }
 }
