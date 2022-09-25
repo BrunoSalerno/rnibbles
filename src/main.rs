@@ -36,7 +36,6 @@ fn setup(
 ) {
     commands.spawn_bundle(Camera2dBundle::default());
 
-    // Rectangle
     commands.spawn_bundle(Nibbles{
         name: NibblesName("Wormy".to_string()),
         direction: Direction::Right,
