@@ -110,11 +110,11 @@ fn controls(
     }
 
     for (index, mut transform) in &mut query_parts {
-       old_orig_x = transform.translation.x;
-       old_orig_y = transform.translation.y;
-       transform.translation.x = orig_x;
-       transform.translation.y = orig_y;
-       orig_x = old_orig_x;
-       orig_y = old_orig_y;
+        old_orig_x = transform.translation.x;
+        old_orig_y = transform.translation.y;
+        transform.translation.x = orig_x;
+        transform.translation.y = orig_y;
+        orig_x = old_orig_x;
+        orig_y = old_orig_y;
     }
 }
