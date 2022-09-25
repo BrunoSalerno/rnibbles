@@ -58,30 +58,19 @@ fn setup(
         }
     });
 
-    commands.spawn_bundle(WormPart{
-        index: WormPartIndex(0),
-        sprite: SpriteBundle {
-            sprite: Sprite {
-                color: Color::rgb(0.25, 0.25, 0.75),
-                custom_size: Some(Vec2::new(25.0, 25.0)),
+    for n in 0..5 {
+        commands.spawn_bundle(WormPart{
+            index: WormPartIndex(n),
+            sprite: SpriteBundle {
+                sprite: Sprite {
+                    color: Color::rgb(0.25, 0.25, 0.75),
+                    custom_size: Some(Vec2::new(25.0, 25.0)),
+                    ..default()
+                },
                 ..default()
-            },
-            ..default()
-        }
-    });
-
-    commands.spawn_bundle(WormPart{
-        index: WormPartIndex(1),
-        sprite: SpriteBundle {
-            sprite: Sprite {
-                color: Color::rgb(0.25, 0.25, 0.75),
-                custom_size: Some(Vec2::new(25.0, 25.0)),
-                ..default()
-            },
-            transform: Transform::from_xyz(100., 0., 0.),
-            ..default()
-        }
-    });
+            }
+        });
+    }
 }
 
 fn controls(
