@@ -31,6 +31,10 @@ struct WormPart {
 
 fn main() {
     App::new()
+        .insert_resource(WindowDescriptor {
+            title: "RNibbles".to_string(),
+            ..default()
+        })
         .add_plugins(DefaultPlugins)
         .add_startup_system(setup)
         .add_system(controls)
