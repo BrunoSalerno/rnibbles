@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 
 #[derive(Component)]
-struct WormName(String);
+struct WormHead;
 
 #[derive(Component)]
 enum Direction {
@@ -12,19 +12,23 @@ enum Direction {
 }
 
 #[derive(Bundle)]
-struct Worm {
-    name: WormName,
+struct WormHeadBundle {
+    worm_head: WormHead,
     direction: Direction,
     #[bundle]
     sprite: SpriteBundle,
 }
 
 #[derive(Component)]
-struct WormPartIndex(u8);
+struct WormBodyPart;
+
+#[derive(Component)]
+struct WormBodyPartIndex(u8);
 
 #[derive(Bundle)]
-struct WormPart {
-    index: WormPartIndex,
+struct WormBodyPartBundle {
+    worm_body_part: WormBodyPart,
+    index: WormBodyPartIndex,
     #[bundle]
     sprite: SpriteBundle,
 }
@@ -49,8 +53,8 @@ fn setup(
 ) {
     commands.spawn_bundle(Camera2dBundle::default());
 
-    commands.spawn_bundle(Worm{
-        name: WormName("Wormy".to_string()),
+    commands.spawn_bundle(WormHeadBundle {
+        worm_head: WormHead,
         direction: Direction::Right,
         sprite: SpriteBundle {
             sprite: Sprite {
@@ -63,8 +67,9 @@ fn setup(
     });
 
     for n in 0..5 {
-        commands.spawn_bundle(WormPart{
-            index: WormPartIndex(n),
+        commands.spawn_bundle(WormBodyPartBundle {
+            worm_body_part: WormBodyPart,
+            index: WormBodyPartIndex(n),
             sprite: SpriteBundle {
                 sprite: Sprite {
                     color: Color::rgb(0.25, 0.25, 0.75),
@@ -80,15 +85,15 @@ fn setup(
 fn controls(
     time: Res<Time>,
     keys: Res<Input<KeyCode>>,
-    mut query: Query<(&WormName, &mut Direction, &mut Transform)>,
-    mut query_parts: Query<(&WormPartIndex, &mut Transform), Without<WormName>>,
+    mut query_head: Query<(&mut Direction, &mut Transform), (With<WormHead>, Without<WormBodyPart>)>,
+    mut query_body: Query<&mut Transform, (With<WormBodyPart>, Without<WormHead>)>,
 ) {
     let mut orig_x:f32 = 0.;
     let mut orig_y:f32 = 0.;
     let mut old_orig_x:f32 = 0.;
     let mut old_orig_y:f32 = 0.;
 
-    for (name, mut direction, mut transform) in &mut query {
+    for (mut direction, mut transform) in &mut query_head {
         orig_x = transform.translation.x;
         orig_y = transform.translation.y;
 
@@ -113,7 +118,7 @@ fn controls(
         }
     }
 
-    for (index, mut transform) in &mut query_parts {
+    for mut transform in &mut query_body {
         old_orig_x = transform.translation.x;
         old_orig_y = transform.translation.y;
         transform.translation.x = orig_x;
