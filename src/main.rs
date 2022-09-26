@@ -99,16 +99,16 @@ fn controls(
             Direction::Left => transform.translation.x -= 150. * time.delta_seconds(),
         }
 
-        if keys.pressed(KeyCode::D) {
+        if keys.pressed(KeyCode::Right) {
             *direction = Direction::Right
         }
-        if keys.pressed(KeyCode::A) {
+        if keys.pressed(KeyCode::Left) {
             *direction = Direction::Left
         }
-        if keys.pressed(KeyCode::S) {
+        if keys.pressed(KeyCode::Down) {
             *direction = Direction::Down
         }
-        if keys.pressed(KeyCode::W) {
+        if keys.pressed(KeyCode::Up) {
             *direction = Direction::Up
         }
     }
