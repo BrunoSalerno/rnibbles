@@ -11,12 +11,18 @@ enum Direction {
     Left
 }
 
+#[derive(Component)]
+struct MovementTimer {
+    timer: Timer
+}
+
 #[derive(Bundle)]
 struct WormHeadBundle {
     worm_head: WormHead,
     direction: Direction,
     #[bundle]
     sprite: SpriteBundle,
+    movement_timer: MovementTimer,
 }
 
 #[derive(Component)]
@@ -58,11 +64,14 @@ fn setup(
         direction: Direction::Right,
         sprite: SpriteBundle {
             sprite: Sprite {
-                color: Color::rgb(0.25, 0.25, 0.75),
+                color: Color::rgb(255., 255., 255.),
                 custom_size: Some(Vec2::new(25.0, 25.0)),
                 ..default()
             },
             ..default()
+        },
+        movement_timer:  MovementTimer{
+            timer: Timer::from_seconds(0.5, true),
         }
     });
 
@@ -85,45 +94,44 @@ fn setup(
 fn controls(
     time: Res<Time>,
     keys: Res<Input<KeyCode>>,
-    mut query_head: Query<(&mut Direction, &mut Transform), (With<WormHead>, Without<WormBodyPart>)>,
+    mut query_head: Query<(&mut Direction, &mut Transform, &mut MovementTimer), (With<WormHead>, Without<WormBodyPart>)>,
     mut query_body: Query<&mut Transform, (With<WormBodyPart>, Without<WormHead>)>,
 ) {
-    let mut orig_x:f32 = 0.;
-    let mut orig_y:f32 = 0.;
-    let mut old_orig_x:f32 = 0.;
-    let mut old_orig_y:f32 = 0.;
+    let (mut direction, mut transform, mut movement_timer) = query_head.single_mut();
 
-    for (mut direction, mut transform) in &mut query_head {
-        orig_x = transform.translation.x;
-        orig_y = transform.translation.y;
+    if movement_timer.timer.tick(time.delta()).finished() {
+        let mut orig_x:f32 = transform.translation.x;
+        let mut orig_y:f32 = transform.translation.y;
+        let mut old_orig_x:f32 = 0.;
+        let mut old_orig_y:f32 = 0.;
 
         match *direction {
-            Direction::Up => transform.translation.y += 150. * time.delta_seconds(),
-            Direction::Down => transform.translation.y -= 150. * time.delta_seconds(),
-            Direction::Right => transform.translation.x += 150. * time.delta_seconds(),
-            Direction::Left => transform.translation.x -= 150. * time.delta_seconds(),
+            Direction::Up => transform.translation.y += 25.,
+            Direction::Down => transform.translation.y -= 25.,
+            Direction::Right => transform.translation.x += 25.,
+            Direction::Left => transform.translation.x -= 25.,
         }
 
-        if keys.pressed(KeyCode::Right) {
-            *direction = Direction::Right
-        }
-        if keys.pressed(KeyCode::Left) {
-            *direction = Direction::Left
-        }
-        if keys.pressed(KeyCode::Down) {
-            *direction = Direction::Down
-        }
-        if keys.pressed(KeyCode::Up) {
-            *direction = Direction::Up
+        for mut transform in &mut query_body {
+            old_orig_x = transform.translation.x;
+            old_orig_y = transform.translation.y;
+            transform.translation.x = orig_x;
+            transform.translation.y = orig_y;
+            orig_x = old_orig_x;
+            orig_y = old_orig_y;
         }
     }
 
-    for mut transform in &mut query_body {
-        old_orig_x = transform.translation.x;
-        old_orig_y = transform.translation.y;
-        transform.translation.x = orig_x;
-        transform.translation.y = orig_y;
-        orig_x = old_orig_x;
-        orig_y = old_orig_y;
+    if keys.pressed(KeyCode::Right) {
+        *direction = Direction::Right
+    }
+    if keys.pressed(KeyCode::Left) {
+        *direction = Direction::Left
+    }
+    if keys.pressed(KeyCode::Down) {
+        *direction = Direction::Down
+    }
+    if keys.pressed(KeyCode::Up) {
+        *direction = Direction::Up
     }
 }
