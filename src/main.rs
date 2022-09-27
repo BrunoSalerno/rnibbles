@@ -19,13 +19,9 @@ struct Worm {
 #[derive(Component)]
 struct WormBodyPart;
 
-#[derive(Component)]
-struct WormBodyPartIndex(u8);
-
 #[derive(Bundle)]
 struct WormBodyPartBundle {
     worm_body_part: WormBodyPart,
-    index: WormBodyPartIndex,
     #[bundle]
     sprite: SpriteBundle,
 }
@@ -58,13 +54,16 @@ fn setup(
     });
 
     for n in 0..5 {
+        let mut color = Color::rgb(0.25, 0.25, 0.75);
+        if n == 0 {
+            color = Color::rgb(255., 255., 255.);
+        }
         commands.spawn_bundle(WormBodyPartBundle {
             worm_body_part: WormBodyPart,
-            index: WormBodyPartIndex(n),
             sprite: SpriteBundle {
                 sprite: Sprite {
-                    color: Color::rgb(0.25, 0.25, 0.75),
-                    custom_size: Some(Vec2::new(25.0, 25.0)),
+                    color: color,
+                    custom_size: Some(Vec2::new(25., 25.)),
                     ..default()
                 },
                 ..default()
