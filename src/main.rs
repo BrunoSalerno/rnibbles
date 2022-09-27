@@ -1,9 +1,6 @@
 use bevy::prelude::*;
 
 #[derive(Component)]
-struct WormHead;
-
-#[derive(Component)]
 enum Direction {
     Up,
     Down,
@@ -12,17 +9,11 @@ enum Direction {
 }
 
 #[derive(Component)]
-struct MovementTimer {
-    timer: Timer
-}
-
-#[derive(Bundle)]
-struct WormHeadBundle {
-    worm_head: WormHead,
+struct Worm {
     direction: Direction,
-    #[bundle]
-    sprite: SpriteBundle,
-    movement_timer: MovementTimer,
+    timer: Timer,
+    head_x: f32,
+    head_y: f32,
 }
 
 #[derive(Component)]
@@ -59,20 +50,11 @@ fn setup(
 ) {
     commands.spawn_bundle(Camera2dBundle::default());
 
-    commands.spawn_bundle(WormHeadBundle {
-        worm_head: WormHead,
+    commands.spawn().insert(Worm {
         direction: Direction::Right,
-        sprite: SpriteBundle {
-            sprite: Sprite {
-                color: Color::rgb(255., 255., 255.),
-                custom_size: Some(Vec2::new(25.0, 25.0)),
-                ..default()
-            },
-            ..default()
-        },
-        movement_timer:  MovementTimer{
-            timer: Timer::from_seconds(0.5, true),
-        }
+        timer: Timer::from_seconds(0.5, true),
+        head_x: 0.,
+        head_y: 0.,
     });
 
     for n in 0..5 {
@@ -94,22 +76,22 @@ fn setup(
 fn controls(
     time: Res<Time>,
     keys: Res<Input<KeyCode>>,
-    mut query_head: Query<(&mut Direction, &mut Transform, &mut MovementTimer), (With<WormHead>, Without<WormBodyPart>)>,
-    mut query_body: Query<&mut Transform, (With<WormBodyPart>, Without<WormHead>)>,
+    mut query_worm: Query<&mut Worm>,
+    mut query_body: Query<&mut Transform, With<WormBodyPart>>,
 ) {
-    let (mut direction, mut transform, mut movement_timer) = query_head.single_mut();
+    let mut worm = query_worm.single_mut();
 
-    if movement_timer.timer.tick(time.delta()).finished() {
-        let mut orig_x:f32 = transform.translation.x;
-        let mut orig_y:f32 = transform.translation.y;
+    if worm.timer.tick(time.delta()).finished() {
+        let mut orig_x:f32 = worm.head_x;
+        let mut orig_y:f32 = worm.head_y;
         let mut old_orig_x:f32 = 0.;
         let mut old_orig_y:f32 = 0.;
 
-        match *direction {
-            Direction::Up => transform.translation.y += 25.,
-            Direction::Down => transform.translation.y -= 25.,
-            Direction::Right => transform.translation.x += 25.,
-            Direction::Left => transform.translation.x -= 25.,
+        match worm.direction {
+            Direction::Up => worm.head_y += 25.,
+            Direction::Down => worm.head_y -= 25.,
+            Direction::Right => worm.head_x += 25.,
+            Direction::Left => worm.head_x -= 25.,
         }
 
         for mut transform in &mut query_body {
@@ -123,15 +105,15 @@ fn controls(
     }
 
     if keys.pressed(KeyCode::Right) {
-        *direction = Direction::Right
+        worm.direction = Direction::Right
     }
     if keys.pressed(KeyCode::Left) {
-        *direction = Direction::Left
+        worm.direction = Direction::Left
     }
     if keys.pressed(KeyCode::Down) {
-        *direction = Direction::Down
+        worm.direction = Direction::Down
     }
     if keys.pressed(KeyCode::Up) {
-        *direction = Direction::Up
+        worm.direction = Direction::Up
     }
 }
