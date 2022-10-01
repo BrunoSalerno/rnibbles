@@ -69,7 +69,7 @@ fn setup(
 
     commands.spawn_bundle(
         TextBundle::from_section(
-            "Hola: ",
+            "",
             TextStyle {
                 font: asset_server.load("FiraMono-Medium.ttf"),
                 font_size: 25.,
