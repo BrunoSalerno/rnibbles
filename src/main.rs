@@ -26,6 +26,16 @@ struct WormBodyPartBundle {
     sprite: SpriteBundle,
 }
 
+const WORM_BODY_SIZE:f32 = 25.;
+
+const BOARD_COLOR:Color = Color::rgba(191./255., 238./255., 144./255., 0.3);
+const BOARD_WIDTH:f32 = 850.;
+const BOARD_HEIGHT:f32 = 650.;
+const BOARD_MAX_X:f32 = BOARD_WIDTH / 2.;
+const BOARD_MIN_X:f32 = - BOARD_WIDTH / 2.;
+const BOARD_MAX_Y:f32 = BOARD_HEIGHT / 2.;
+const BOARD_MIN_Y:f32 = - BOARD_HEIGHT / 2.;
+
 fn main() {
     App::new()
         .insert_resource(WindowDescriptor {
@@ -47,6 +57,16 @@ fn setup(
     asset_server: Res<AssetServer>,
 ) {
     commands.spawn_bundle(Camera2dBundle::default());
+
+    commands.spawn_bundle(SpriteBundle {
+        sprite: Sprite {
+            color: BOARD_COLOR,
+            custom_size: Some(Vec2::new(BOARD_WIDTH, BOARD_HEIGHT)),
+            ..default()
+        },
+        ..default()
+    });
+
     commands.spawn_bundle(
         TextBundle::from_section(
             "Hola: ",
@@ -85,7 +105,7 @@ fn setup(
             sprite: SpriteBundle {
                 sprite: Sprite {
                     color: color,
-                    custom_size: Some(Vec2::new(25., 25.)),
+                    custom_size: Some(Vec2::new(WORM_BODY_SIZE, WORM_BODY_SIZE)),
                     ..default()
                 },
                 ..default()
@@ -109,10 +129,23 @@ fn controls(
         let mut old_orig_y:f32 = 0.;
 
         match worm.direction {
-            Direction::Up => worm.head_y += 25.,
-            Direction::Down => worm.head_y -= 25.,
-            Direction::Right => worm.head_x += 25.,
-            Direction::Left => worm.head_x -= 25.,
+            Direction::Up => worm.head_y += WORM_BODY_SIZE,
+            Direction::Down => worm.head_y -= WORM_BODY_SIZE,
+            Direction::Right => worm.head_x += WORM_BODY_SIZE,
+            Direction::Left => worm.head_x -= WORM_BODY_SIZE,
+        }
+
+        if worm.head_x < BOARD_MIN_X {
+            worm.head_x = BOARD_MAX_X;
+        }
+        if worm.head_x > BOARD_MAX_X {
+            worm.head_x = BOARD_MIN_X;
+        }
+        if worm.head_y < BOARD_MIN_Y {
+            worm.head_y = BOARD_MAX_Y;
+        }
+        if worm.head_y > BOARD_MAX_Y {
+            worm.head_y = BOARD_MIN_Y;
         }
 
         for mut transform in &mut query_body {
