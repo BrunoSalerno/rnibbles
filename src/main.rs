@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-#[derive(Component)]
+#[derive(Component, PartialEq)]
 enum Direction {
     Up,
     Down,
@@ -158,17 +158,17 @@ fn controls(
         }
     }
 
-    if keys.pressed(KeyCode::Right) {
-        worm.direction = Direction::Right
+    if keys.pressed(KeyCode::Right) && worm.direction != Direction::Left {
+        worm.direction = Direction::Right;
     }
-    if keys.pressed(KeyCode::Left) {
-        worm.direction = Direction::Left
+    if keys.pressed(KeyCode::Left) && worm.direction != Direction::Right {
+        worm.direction = Direction::Left;
     }
-    if keys.pressed(KeyCode::Down) {
-        worm.direction = Direction::Down
+    if keys.pressed(KeyCode::Down) && worm.direction != Direction::Up {
+        worm.direction = Direction::Down;
     }
-    if keys.pressed(KeyCode::Up) {
-        worm.direction = Direction::Up
+    if keys.pressed(KeyCode::Up) && worm.direction != Direction::Down {
+        worm.direction = Direction::Up;
     }
 }
 
