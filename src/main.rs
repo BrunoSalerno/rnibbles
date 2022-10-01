@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use rand::Rng;
 
 #[derive(Component, PartialEq)]
 enum Direction {
@@ -25,6 +26,17 @@ struct WormBodyPartBundle {
     #[bundle]
     sprite: SpriteBundle,
 }
+
+#[derive(Component)]
+struct Fruit;
+
+#[derive(Bundle)]
+struct FruitBundle {
+    fruit: Fruit,
+    #[bundle]
+    sprite: SpriteBundle,
+}
+
 
 const WORM_BODY_SIZE:f32 = 25.;
 
@@ -113,14 +125,44 @@ fn setup(
             }
         });
     }
+
+    let (fruit_x, fruit_y) = get_fruit_random_position();
+    commands.spawn_bundle(FruitBundle {
+        fruit: Fruit,
+        sprite: SpriteBundle {
+            sprite: Sprite {
+                color: Color::RED,
+                custom_size: Some(Vec2::new(WORM_BODY_SIZE, WORM_BODY_SIZE)),
+                ..default()
+            },
+            transform: Transform {
+                translation: Vec3 { x: fruit_x, y: fruit_y, z: 0. },
+                ..default()
+            },
+            ..default()
+        }
+    });
+}
+
+fn get_fruit_random_position() -> (f32, f32) {
+    let mut rng = rand::thread_rng();
+    let range_x:f32 = (BOARD_MAX_X - BOARD_MIN_X) / 25.;
+    let range_y:f32 = (BOARD_MAX_Y - BOARD_MIN_Y) / 25.;
+    let x_in_range:f32 = (rng.gen_range(0..range_x as u32) as f32 * 25.);
+    let y_in_range:f32 = (rng.gen_range(0..range_y as u32) as f32 * 25.);
+    let x:f32 = BOARD_MIN_X + x_in_range;
+    let y:f32 = BOARD_MIN_Y + y_in_range;
+    (x, y)
 }
 
 fn update_worm_position(
     time: Res<Time>,
     mut query_worm: Query<&mut Worm>,
     mut query_body: Query<&mut Transform, With<WormBodyPart>>,
+    mut query_fruit: Query<&mut Transform, (With<Fruit>, Without<WormBodyPart>)>
 ) {
     let mut worm = query_worm.single_mut();
+    let mut fruit_transform = query_fruit.single_mut();
 
     if worm.timer.tick(time.delta()).finished() {
         match worm.direction {
@@ -128,6 +170,12 @@ fn update_worm_position(
             Direction::Down => worm.head_y -= WORM_BODY_SIZE,
             Direction::Right => worm.head_x += WORM_BODY_SIZE,
             Direction::Left => worm.head_x -= WORM_BODY_SIZE,
+        }
+
+        if worm.head_x == fruit_transform.translation.x && worm.head_y == fruit_transform.translation.y {
+            let (fruit_x, fruit_y) = get_fruit_random_position();
+            fruit_transform.translation.x = fruit_x;
+            fruit_transform.translation.y = fruit_y;
         }
 
         if worm.head_x < BOARD_MIN_X {
