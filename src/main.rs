@@ -29,12 +29,12 @@ struct WormBodyPartBundle {
 const WORM_BODY_SIZE:f32 = 25.;
 
 const BOARD_COLOR:Color = Color::rgba(191./255., 238./255., 144./255., 0.3);
-const BOARD_WIDTH:f32 = 850.;
-const BOARD_HEIGHT:f32 = 650.;
-const BOARD_MAX_X:f32 = BOARD_WIDTH / 2.;
-const BOARD_MIN_X:f32 = - BOARD_WIDTH / 2.;
-const BOARD_MAX_Y:f32 = BOARD_HEIGHT / 2.;
-const BOARD_MIN_Y:f32 = - BOARD_HEIGHT / 2.;
+const BOARD_WIDTH:f32 = 875.;
+const BOARD_HEIGHT:f32 = 675.;
+const BOARD_MAX_X:f32 = BOARD_WIDTH / 2. - WORM_BODY_SIZE / 2.;
+const BOARD_MIN_X:f32 = - BOARD_WIDTH / 2. +  WORM_BODY_SIZE / 2.;
+const BOARD_MAX_Y:f32 = BOARD_HEIGHT / 2. -  WORM_BODY_SIZE / 2.;
+const BOARD_MIN_Y:f32 = - BOARD_HEIGHT / 2. +  WORM_BODY_SIZE / 2.;
 
 fn main() {
     App::new()
