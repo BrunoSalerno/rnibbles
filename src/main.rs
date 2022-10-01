@@ -12,9 +12,11 @@ enum Direction {
 #[derive(Component)]
 struct Worm {
     direction: Direction,
+    timer_duration: f32,
     timer: Timer,
     head_x: f32,
     head_y: f32,
+    level: u32,
 }
 
 #[derive(Component)]
@@ -103,9 +105,11 @@ fn setup(
 
     commands.spawn().insert(Worm {
         direction: Direction::Right,
+        timer_duration: 0.5,
         timer: Timer::from_seconds(0.5, true),
         head_x: 0.,
         head_y: 0.,
+        level: 1,
     });
 
     for n in 0..5 {
@@ -174,6 +178,9 @@ fn update_worm_position(
             let (fruit_x, fruit_y) = get_fruit_random_position();
             fruit_transform.translation.x = fruit_x;
             fruit_transform.translation.y = fruit_y;
+            worm.timer_duration = 0.9 * worm.timer_duration;
+            worm.timer = Timer::from_seconds(worm.timer_duration, true);
+            worm.level += 1;
         }
 
         if worm.head_x < BOARD_MIN_X {
@@ -231,5 +238,5 @@ fn update_label(
 ) {
     let worm = query_worm.single();
     let mut text = query_text.single_mut();
-    text.sections[0].value = worm.head_x.to_string() + &','.to_string() + &worm.head_y.to_string();
+    text.sections[0].value = String::from("Level ") + &worm.level.to_string();
 }
