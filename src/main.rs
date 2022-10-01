@@ -123,11 +123,6 @@ fn controls(
     let mut worm = query_worm.single_mut();
 
     if worm.timer.tick(time.delta()).finished() {
-        let mut orig_x:f32 = worm.head_x;
-        let mut orig_y:f32 = worm.head_y;
-        let mut old_orig_x:f32 = 0.;
-        let mut old_orig_y:f32 = 0.;
-
         match worm.direction {
             Direction::Up => worm.head_y += WORM_BODY_SIZE,
             Direction::Down => worm.head_y -= WORM_BODY_SIZE,
@@ -147,6 +142,11 @@ fn controls(
         if worm.head_y > BOARD_MAX_Y {
             worm.head_y = BOARD_MIN_Y;
         }
+
+        let mut orig_x:f32 = worm.head_x;
+        let mut orig_y:f32 = worm.head_y;
+        let mut old_orig_x:f32 = 0.;
+        let mut old_orig_y:f32 = 0.;
 
         for mut transform in &mut query_body {
             old_orig_x = transform.translation.x;
