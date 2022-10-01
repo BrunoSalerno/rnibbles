@@ -39,7 +39,7 @@ struct FruitBundle {
     sprite: SpriteBundle,
 }
 
-
+const WORM_BODY_COLOR:Color = Color::rgb(0.25, 0.25, 0.75);
 const WORM_BODY_SIZE:f32 = 25.;
 
 const BOARD_COLOR:Color = Color::rgba(191./255., 238./255., 144./255., 0.3);
@@ -113,21 +113,11 @@ fn setup(
     });
 
     for n in 0..5 {
-        let mut color = Color::rgb(0.25, 0.25, 0.75);
+        let mut color = WORM_BODY_COLOR;
         if n == 0 {
             color = Color::rgb(255., 255., 255.);
         }
-        commands.spawn_bundle(WormBodyPartBundle {
-            worm_body_part: WormBodyPart,
-            sprite: SpriteBundle {
-                sprite: Sprite {
-                    color: color,
-                    custom_size: Some(Vec2::new(WORM_BODY_SIZE, WORM_BODY_SIZE)),
-                    ..default()
-                },
-                ..default()
-            }
-        });
+        commands.spawn_bundle(get_worm_body_part(color, 0., 0.));
     }
 
     let (fruit_x, fruit_y) = get_fruit_random_position();
@@ -158,6 +148,7 @@ fn get_fruit_random_position() -> (f32, f32) {
 }
 
 fn update_worm_position(
+    mut commands: Commands,
     time: Res<Time>,
     mut query_worm: Query<&mut Worm>,
     mut query_body: Query<&mut Transform, With<WormBodyPart>>,
@@ -172,15 +163,6 @@ fn update_worm_position(
             Direction::Down => worm.head_y -= WORM_BODY_SIZE,
             Direction::Right => worm.head_x += WORM_BODY_SIZE,
             Direction::Left => worm.head_x -= WORM_BODY_SIZE,
-        }
-
-        if worm.head_x == fruit_transform.translation.x && worm.head_y == fruit_transform.translation.y {
-            let (fruit_x, fruit_y) = get_fruit_random_position();
-            fruit_transform.translation.x = fruit_x;
-            fruit_transform.translation.y = fruit_y;
-            worm.timer_duration = 0.9 * worm.timer_duration;
-            worm.timer = Timer::from_seconds(worm.timer_duration, true);
-            worm.level += 1;
         }
 
         if worm.head_x < BOARD_MIN_X {
@@ -208,6 +190,16 @@ fn update_worm_position(
             transform.translation.y = orig_y;
             orig_x = old_orig_x;
             orig_y = old_orig_y;
+        }
+
+        if worm.head_x == fruit_transform.translation.x && worm.head_y == fruit_transform.translation.y {
+            let (fruit_x, fruit_y) = get_fruit_random_position();
+            fruit_transform.translation.x = fruit_x;
+            fruit_transform.translation.y = fruit_y;
+            worm.timer_duration = 0.9 * worm.timer_duration;
+            worm.timer = Timer::from_seconds(worm.timer_duration, true);
+            worm.level += 1;
+            commands.spawn_bundle(get_worm_body_part(WORM_BODY_COLOR, orig_x, orig_y));
         }
     }
 }
@@ -239,4 +231,26 @@ fn update_label(
     let worm = query_worm.single();
     let mut text = query_text.single_mut();
     text.sections[0].value = String::from("Level ") + &worm.level.to_string();
+}
+
+fn get_worm_body_part(
+    color: Color,
+    x: f32,
+    y: f32,
+) -> WormBodyPartBundle {
+    WormBodyPartBundle {
+        worm_body_part: WormBodyPart,
+        sprite: SpriteBundle {
+            sprite: Sprite {
+                color: color,
+                custom_size: Some(Vec2::new(WORM_BODY_SIZE, WORM_BODY_SIZE)),
+                ..default()
+            },
+            transform: Transform {
+                translation: Vec3 { x: x, y: y, z: 0. },
+                ..default()
+            },
+            ..default()
+        }
+    }
 }
