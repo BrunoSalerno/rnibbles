@@ -35,6 +35,7 @@ fn main() {
         .add_plugins(DefaultPlugins)
         .add_startup_system(setup)
         .add_system(controls)
+        .add_system(update_label)
         .add_system(bevy::window::close_on_esc)
         .run();
 }
@@ -43,8 +44,29 @@ fn setup(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
+    asset_server: Res<AssetServer>,
 ) {
     commands.spawn_bundle(Camera2dBundle::default());
+    commands.spawn_bundle(
+        TextBundle::from_section(
+            "Hola: ",
+            TextStyle {
+                font: asset_server.load("FiraMono-Medium.ttf"),
+                font_size: 25.,
+                color: Color::WHITE,
+                ..default()
+            },
+        )
+        .with_style(Style {
+            position_type: PositionType::Absolute,
+            position: UiRect {
+                top: Val::Px(5.0),
+                left: Val::Px(5.0),
+                ..default()
+            },
+            ..default()
+        })
+    );
 
     commands.spawn().insert(Worm {
         direction: Direction::Right,
@@ -115,4 +137,13 @@ fn controls(
     if keys.pressed(KeyCode::Up) {
         worm.direction = Direction::Up
     }
+}
+
+fn update_label(
+    query_worm: Query<&mut Worm>,
+    mut query_text: Query<&mut Text>,
+) {
+    let worm = query_worm.single();
+    let mut text = query_text.single_mut();
+    text.sections[0].value = worm.head_x.to_string() + &','.to_string() + &worm.head_y.to_string();
 }
