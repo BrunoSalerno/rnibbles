@@ -148,11 +148,9 @@ fn get_fruit_random_position() -> (f32, f32) {
     let mut rng = rand::thread_rng();
     let range_x:f32 = (BOARD_MAX_X - BOARD_MIN_X) / 25.;
     let range_y:f32 = (BOARD_MAX_Y - BOARD_MIN_Y) / 25.;
-    let x_in_range:f32 = (rng.gen_range(0..range_x as u32) as f32 * 25.);
-    let y_in_range:f32 = (rng.gen_range(0..range_y as u32) as f32 * 25.);
-    let x:f32 = BOARD_MIN_X + x_in_range;
-    let y:f32 = BOARD_MIN_Y + y_in_range;
-    (x, y)
+    let x_in_range:f32 = rng.gen_range(0..range_x as u32) as f32 * 25.;
+    let y_in_range:f32 = rng.gen_range(0..range_y as u32) as f32 * 25.;
+    (BOARD_MIN_X + x_in_range, BOARD_MIN_Y + y_in_range)
 }
 
 fn update_worm_position(
