@@ -44,6 +44,7 @@ fn main() {
         })
         .add_plugins(DefaultPlugins)
         .add_startup_system(setup)
+        .add_system(update_worm_position)
         .add_system(controls)
         .add_system(update_label)
         .add_system(bevy::window::close_on_esc)
@@ -114,9 +115,8 @@ fn setup(
     }
 }
 
-fn controls(
+fn update_worm_position(
     time: Res<Time>,
-    keys: Res<Input<KeyCode>>,
     mut query_worm: Query<&mut Worm>,
     mut query_body: Query<&mut Transform, With<WormBodyPart>>,
 ) {
@@ -157,6 +157,13 @@ fn controls(
             orig_y = old_orig_y;
         }
     }
+}
+
+fn controls(
+    keys: Res<Input<KeyCode>>,
+    mut query_worm: Query<&mut Worm>,
+) {
+    let mut worm = query_worm.single_mut();
 
     if keys.pressed(KeyCode::Right) && worm.direction != Direction::Left {
         worm.direction = Direction::Right;
