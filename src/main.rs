@@ -39,6 +39,7 @@ struct FruitBundle {
     sprite: SpriteBundle,
 }
 
+const WORM_HEAD_COLOR:Color = Color::WHITE;
 const WORM_BODY_COLOR:Color = Color::rgb(0.25, 0.25, 0.75);
 const WORM_BODY_SIZE:f32 = 25.;
 
@@ -113,10 +114,7 @@ fn setup(
     });
 
     for n in 0..5 {
-        let mut color = WORM_BODY_COLOR;
-        if n == 0 {
-            color = Color::rgb(255., 255., 255.);
-        }
+        let color:Color = if n == 0 { WORM_HEAD_COLOR } else { WORM_BODY_COLOR };
         commands.spawn_bundle(get_worm_body_part(color, 0., 0.));
     }
 
@@ -180,8 +178,8 @@ fn update_worm_position(
 
         let mut orig_x:f32 = worm.head_x;
         let mut orig_y:f32 = worm.head_y;
-        let mut old_orig_x:f32 = 0.;
-        let mut old_orig_y:f32 = 0.;
+        let mut old_orig_x:f32;
+        let mut old_orig_y:f32;
 
         for mut transform in &mut query_body {
             old_orig_x = transform.translation.x;
