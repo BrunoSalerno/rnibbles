@@ -18,6 +18,7 @@ struct Worm {
     head_x: f32,
     head_y: f32,
     level: u8,
+    max_level_reached: u8,
     new_parts: Vec<Entity>,
 }
 
@@ -81,15 +82,26 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
     });
 
     commands.spawn_bundle(
-        TextBundle::from_section(
-            "",
-            TextStyle {
-                font: asset_server.load("FiraMono-Medium.ttf"),
-                font_size: 25.,
-                color: Color::WHITE,
-                ..default()
-            },
-        )
+        TextBundle::from_sections([
+            TextSection::new(
+                "",
+                TextStyle {
+                    font: asset_server.load("FiraMono-Medium.ttf"),
+                    font_size: 25.,
+                    color: Color::WHITE,
+                    ..default()
+                },
+            ),
+            TextSection::new(
+                "",
+                TextStyle {
+                    font: asset_server.load("FiraMono-Medium.ttf"),
+                    font_size: 25.,
+                    color: Color::RED,
+                    ..default()
+                },
+            ),
+        ])
         .with_style(Style {
             position_type: PositionType::Absolute,
             position: UiRect {
@@ -108,6 +120,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
         head_x: 0.,
         head_y: 0.,
         level: 1,
+        max_level_reached: 1,
         new_parts: Vec::new(),
     });
 
@@ -212,6 +225,9 @@ fn update_worm_position(
             worm.timer_duration = 0.9 * worm.timer_duration;
             worm.timer = Timer::from_seconds(worm.timer_duration, true);
             worm.level += 1;
+            if worm.level > worm.max_level_reached {
+                worm.max_level_reached = worm.level;
+            }
             // we make the worm longer
             let entity_id = commands.spawn_bundle(get_worm_body_part(WORM_BODY_COLOR, orig_x, orig_y)).id();
             worm.new_parts.push(entity_id);
@@ -239,7 +255,14 @@ fn controls(keys: Res<Input<KeyCode>>, mut query_worm: Query<&mut Worm>) {
 fn update_label(query_worm: Query<&mut Worm>, mut query_text: Query<&mut Text>) {
     let worm = query_worm.single();
     let mut text = query_text.single_mut();
+
     text.sections[0].value = String::from("Level ") + &worm.level.to_string();
+
+    let mut max_level_reached = String::from("");
+    if worm.max_level_reached > worm.level {
+        max_level_reached = String::from(" Max: ") + &worm.max_level_reached.to_string();
+    }
+    text.sections[1].value = max_level_reached;
 }
 
 fn get_worm_body_part(color: Color, x: f32, y: f32) -> WormBodyPartBundle {
