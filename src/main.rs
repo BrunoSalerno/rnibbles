@@ -17,7 +17,7 @@ struct Worm {
     timer: Timer,
     head_x: f32,
     head_y: f32,
-    level: u32,
+    level: u8,
 }
 
 #[derive(Component)]
@@ -67,12 +67,7 @@ fn main() {
         .run();
 }
 
-fn setup(
-    mut commands: Commands,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<ColorMaterial>>,
-    asset_server: Res<AssetServer>,
-) {
+fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands.spawn_bundle(Camera2dBundle::default());
 
     commands.spawn_bundle(SpriteBundle {
@@ -210,10 +205,7 @@ fn update_worm_position(
     }
 }
 
-fn controls(
-    keys: Res<Input<KeyCode>>,
-    mut query_worm: Query<&mut Worm>,
-) {
+fn controls(keys: Res<Input<KeyCode>>, mut query_worm: Query<&mut Worm>) {
     let mut worm = query_worm.single_mut();
 
     if keys.pressed(KeyCode::Right) && worm.direction != Direction::Left {
@@ -230,20 +222,13 @@ fn controls(
     }
 }
 
-fn update_label(
-    query_worm: Query<&mut Worm>,
-    mut query_text: Query<&mut Text>,
-) {
+fn update_label(query_worm: Query<&mut Worm>, mut query_text: Query<&mut Text>) {
     let worm = query_worm.single();
     let mut text = query_text.single_mut();
     text.sections[0].value = String::from("Level ") + &worm.level.to_string();
 }
 
-fn get_worm_body_part(
-    color: Color,
-    x: f32,
-    y: f32,
-) -> WormBodyPartBundle {
+fn get_worm_body_part(color: Color, x: f32, y: f32) -> WormBodyPartBundle {
     WormBodyPartBundle {
         worm_body_part: WormBodyPart,
         sprite: SpriteBundle {
