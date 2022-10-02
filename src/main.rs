@@ -18,6 +18,7 @@ struct Worm {
     head_x: f32,
     head_y: f32,
     level: u8,
+    new_parts: Vec<Entity>,
 }
 
 #[derive(Component)]
@@ -107,6 +108,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
         head_x: 0.,
         head_y: 0.,
         level: 1,
+        new_parts: Vec::new(),
     });
 
     for n in 0..5 {
@@ -183,7 +185,17 @@ fn update_worm_position(
         let mut old_orig_x:f32;
         let mut old_orig_y:f32;
 
-        for mut transform in &mut query_body {
+        for (i, mut transform) in query_body.iter_mut().enumerate() {
+            if i > 0 && orig_x == worm.head_x && orig_y == worm.head_y {
+                // If we touch other part of the worm, we reset everything
+                worm.level = 1;
+                worm.timer_duration = 0.5;
+                worm.timer = Timer::from_seconds(worm.timer_duration, true);
+                for entity in &worm.new_parts {
+                    commands.entity(*entity).despawn();
+                }
+                worm.new_parts = Vec::new();
+            }
             old_orig_x = transform.translation.x;
             old_orig_y = transform.translation.y;
             transform.translation.x = orig_x;
@@ -200,7 +212,9 @@ fn update_worm_position(
             worm.timer_duration = 0.9 * worm.timer_duration;
             worm.timer = Timer::from_seconds(worm.timer_duration, true);
             worm.level += 1;
-            commands.spawn_bundle(get_worm_body_part(WORM_BODY_COLOR, orig_x, orig_y));
+            // we make the worm longer
+            let entity_id = commands.spawn_bundle(get_worm_body_part(WORM_BODY_COLOR, orig_x, orig_y)).id();
+            worm.new_parts.push(entity_id);
         }
     }
 }
