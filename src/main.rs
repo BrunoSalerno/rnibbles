@@ -1,5 +1,6 @@
 use bevy::prelude::*;
 use rand::Rng;
+use random_color::RandomColor;
 
 #[derive(Component, PartialEq)]
 enum Direction {
@@ -43,7 +44,7 @@ const WORM_HEAD_COLOR:Color = Color::WHITE;
 const WORM_BODY_COLOR:Color = Color::rgb(0.25, 0.25, 0.75);
 const WORM_BODY_SIZE:f32 = 25.;
 
-const BOARD_COLOR:Color = Color::rgba(191./255., 238./255., 144./255., 0.3);
+const BOARD_COLOR:Color = Color::rgba(0.75, 0.93, 0.56, 0.3);
 const BOARD_WIDTH:f32 = 875.;
 const BOARD_HEIGHT:f32 = 675.;
 const BOARD_MAX_X:f32 = BOARD_WIDTH / 2. - WORM_BODY_SIZE / 2.;
@@ -118,12 +119,12 @@ fn setup(
         commands.spawn_bundle(get_worm_body_part(color, 0., 0.));
     }
 
-    let (fruit_x, fruit_y) = get_fruit_random_position();
+    let (color, fruit_x, fruit_y) = get_fruit_data();
     commands.spawn_bundle(FruitBundle {
         fruit: Fruit,
         sprite: SpriteBundle {
             sprite: Sprite {
-                color: Color::RED,
+                color: color,
                 custom_size: Some(Vec2::new(WORM_BODY_SIZE, WORM_BODY_SIZE)),
                 ..default()
             },
@@ -136,13 +137,19 @@ fn setup(
     });
 }
 
-fn get_fruit_random_position() -> (f32, f32) {
+fn get_color_from_urgba(r: u8, g: u8, b: u8, a:f32) -> Color {
+    Color::rgba(r as f32 / 255., g as f32 / 255., b as f32 / 255., a)
+}
+
+fn get_fruit_data() -> (Color, f32, f32) {
     let mut rng = rand::thread_rng();
     let range_x:f32 = (BOARD_MAX_X - BOARD_MIN_X) / 25.;
     let range_y:f32 = (BOARD_MAX_Y - BOARD_MIN_Y) / 25.;
     let x_in_range:f32 = rng.gen_range(0..range_x as u32) as f32 * 25.;
     let y_in_range:f32 = rng.gen_range(0..range_y as u32) as f32 * 25.;
-    (BOARD_MIN_X + x_in_range, BOARD_MIN_Y + y_in_range)
+    let [r, g, b] = RandomColor::new().to_rgb_array();
+    let color = get_color_from_urgba(r, g, b, 1.);
+    (color, BOARD_MIN_X + x_in_range, BOARD_MIN_Y + y_in_range)
 }
 
 fn update_worm_position(
@@ -150,10 +157,10 @@ fn update_worm_position(
     time: Res<Time>,
     mut query_worm: Query<&mut Worm>,
     mut query_body: Query<&mut Transform, With<WormBodyPart>>,
-    mut query_fruit: Query<&mut Transform, (With<Fruit>, Without<WormBodyPart>)>
+    mut query_fruit: Query<(&mut Sprite, &mut Transform), (With<Fruit>, Without<WormBodyPart>)>
 ) {
     let mut worm = query_worm.single_mut();
-    let mut fruit_transform = query_fruit.single_mut();
+    let (mut fruit_sprite, mut fruit_transform) = query_fruit.single_mut();
 
     if worm.timer.tick(time.delta()).finished() {
         match worm.direction {
@@ -191,7 +198,8 @@ fn update_worm_position(
         }
 
         if worm.head_x == fruit_transform.translation.x && worm.head_y == fruit_transform.translation.y {
-            let (fruit_x, fruit_y) = get_fruit_random_position();
+            let (color, fruit_x, fruit_y) = get_fruit_data();
+            fruit_sprite.color = color;
             fruit_transform.translation.x = fruit_x;
             fruit_transform.translation.y = fruit_y;
             worm.timer_duration = 0.9 * worm.timer_duration;
