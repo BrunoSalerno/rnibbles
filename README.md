@@ -9,7 +9,7 @@ Cross compilation
 ```bash
 cargo build-docker-image x86_64-pc-windows-msvc-cross
 ```
-3. Make sure that the [Cross.toml fine](Cross.toml) has an entry for your desired arch, pointing to the image just built.
+3. Make sure that the [Cross.toml file](Cross.toml) has an entry for your desired arch, pointing to the image just built.
 Note. Some archs already have default images.
 
 4. Build the release`using the right arch:
