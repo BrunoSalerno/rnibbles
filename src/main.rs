@@ -43,12 +43,13 @@ struct Fruit;
 struct FruitBundle {
     fruit: Fruit,
     #[bundle]
-    sprite: SpriteBundle,
+    pbr: PbrBundle,
 }
 
 const WORM_HEAD_COLOR:Color = Color::WHITE;
 const WORM_BODY_COLOR:Color = Color::rgb(0.25, 0.25, 0.75);
 const WORM_BODY_SIZE:f32 = 25.;
+const FRUIT_RADIUS:f32 = 12.5;
 
 const BOARD_COLOR:Color = Color::rgba(0.75, 0.93, 0.56, 0.3);
 const BOARD_WIDTH:f32 = 875.;
@@ -172,14 +173,11 @@ fn setup(
     let (color, fruit_x, fruit_y) = get_fruit_data();
     commands.spawn_bundle(FruitBundle {
         fruit: Fruit,
-        sprite: SpriteBundle {
-            sprite: Sprite {
-                color: color,
-                custom_size: Some(Vec2::new(WORM_BODY_SIZE, WORM_BODY_SIZE)),
-                ..default()
-            },
+        pbr: PbrBundle {
+            mesh: meshes.add(Mesh::from(shape::Icosphere { radius: FRUIT_RADIUS, subdivisions: 2 })),
+            material: materials.add(color.into()),
             transform: Transform {
-                translation: Vec3 { x: fruit_x, y: fruit_y, z: 0. },
+                translation: Vec3 { x: fruit_x, y: fruit_y, z: 12.5 },
                 ..default()
             },
             ..default()
@@ -207,10 +205,10 @@ fn update_worm_position(
     time: Res<Time>,
     mut query_worm: Query<&mut Worm>,
     mut query_body: Query<&mut Transform, With<WormBodyPart>>,
-    mut query_fruit: Query<(&mut Sprite, &mut Transform), (With<Fruit>, Without<WormBodyPart>)>
+    mut query_fruit: Query<&mut Transform, (With<Fruit>, Without<WormBodyPart>)>
 ) {
     let mut worm = query_worm.single_mut();
-    let (mut fruit_sprite, mut fruit_transform) = query_fruit.single_mut();
+    let mut fruit_transform = query_fruit.single_mut();
 
     if worm.timer.tick(time.delta()).finished() {
         match worm.direction {
@@ -265,7 +263,7 @@ fn update_worm_position(
         }
         if worm.head_x == fruit_transform.translation.x && worm.head_y == fruit_transform.translation.y {
             let (color, fruit_x, fruit_y) = get_fruit_data();
-            fruit_sprite.color = color;
+            // fruit_sprite.color = color;
             fruit_transform.translation.x = fruit_x;
             fruit_transform.translation.y = fruit_y;
             worm.timer_duration = 0.9 * worm.timer_duration;
