@@ -244,6 +244,7 @@ fn update_worm_position(
                     commands.entity(*entity).despawn();
                 }
                 worm.parts = Vec::new();
+                break;
             }
             old_orig_x = transform.translation.x;
             old_orig_y = transform.translation.y;
