@@ -20,7 +20,10 @@ struct Worm {
     head_y: f32,
     level: u8,
     max_level_reached: u8,
-    new_parts: Vec<Entity>,
+    parts: Vec<Entity>,
+    body_handle: Handle<Mesh>,
+    head_color_handle: Handle<StandardMaterial>,
+    body_color_handle: Handle<StandardMaterial>,
 }
 
 #[derive(Component)]
@@ -160,17 +163,11 @@ fn setup(
         head_y: 0.,
         level: 1,
         max_level_reached: 1,
-        new_parts: Vec::new(),
+        parts: Vec::new(),
+        body_handle: meshes.add(Mesh::from(shape::Cube { size: WORM_BODY_SIZE })),
+        head_color_handle: materials.add(WORM_HEAD_COLOR.into()),
+        body_color_handle: materials.add(WORM_BODY_COLOR.into()),
     });
-
-    let worm_body_handle:Handle<Mesh> = meshes.add(Mesh::from(shape::Cube { size: WORM_BODY_SIZE }));
-    let head_color_handle:Handle<StandardMaterial> = materials.add(WORM_HEAD_COLOR.into());
-    let body_color_handle:Handle<StandardMaterial> = materials.add(WORM_BODY_COLOR.into());
-
-    for n in 0..5 {
-        let color_handle:&Handle<StandardMaterial> = if n == 0 { &head_color_handle } else { &body_color_handle };
-        commands.spawn_bundle(get_worm_body_part(color_handle, &worm_body_handle, 0., 0., ));
-    }
 
     let (color, fruit_x, fruit_y) = get_fruit_data();
     commands.spawn_bundle(FruitBundle {
@@ -247,10 +244,10 @@ fn update_worm_position(
                 worm.level = 1;
                 worm.timer_duration = 0.5;
                 worm.timer = Timer::from_seconds(worm.timer_duration, true);
-                for entity in &worm.new_parts {
+                for entity in &worm.parts {
                     commands.entity(*entity).despawn();
                 }
-                worm.new_parts = Vec::new();
+                worm.parts = Vec::new();
             }
             old_orig_x = transform.translation.x;
             old_orig_y = transform.translation.y;
@@ -260,6 +257,12 @@ fn update_worm_position(
             orig_y = old_orig_y;
         }
 
+        // Initial part of the body
+        if worm.parts.len() < 5 {
+            let is_head:bool = worm.parts.len() == 0;
+            let entity_id = commands.spawn_bundle(get_worm_body_part(is_head, &worm, orig_x, orig_y)).id();
+            worm.parts.push(entity_id);
+        }
         if worm.head_x == fruit_transform.translation.x && worm.head_y == fruit_transform.translation.y {
             let (color, fruit_x, fruit_y) = get_fruit_data();
             fruit_sprite.color = color;
@@ -272,8 +275,8 @@ fn update_worm_position(
                 worm.max_level_reached = worm.level;
             }
             // we make the worm longer
-            // let entity_id = commands.spawn_bundle(get_worm_body_part(WORM_BODY_COLOR, orig_x, orig_y)).id();
-            // worm.new_parts.push(entity_id);
+            let entity_id = commands.spawn_bundle(get_worm_body_part(false, &worm, orig_x, orig_y)).id();
+            worm.parts.push(entity_id);
         }
     }
 }
@@ -309,15 +312,16 @@ fn update_label(query_worm: Query<&mut Worm>, mut query_text: Query<&mut Text>) 
 }
 
 fn get_worm_body_part(
-    color_handle: &Handle<StandardMaterial>,
-    mesh_handle: &Handle<Mesh>,
+    is_head:bool,
+    worm:&Worm,
     x: f32,
     y: f32,
     ) -> WormBodyPartBundle {
+    let color_handle:&Handle<StandardMaterial> = if is_head { &worm.head_color_handle } else { &worm.body_color_handle };
     WormBodyPartBundle {
         worm_body_part: WormBodyPart,
         pbr: PbrBundle {
-            mesh: mesh_handle.clone(),
+            mesh: worm.body_handle.clone(),
             material: color_handle.clone(),
             transform: Transform {
                 translation: Vec3 { x: x, y: y, z: 12.5 },
