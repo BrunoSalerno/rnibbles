@@ -114,7 +114,7 @@ fn setup(
         ..default()
     });
 
-    // plane
+    // Board
     commands.spawn_bundle(PbrBundle {
         mesh: meshes.add(Mesh::from(shape::Box {
             max_x: BOARD_MAX_X,
