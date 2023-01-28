@@ -1,6 +1,7 @@
 use bevy::prelude::*;
 use rand::Rng;
 use random_color::RandomColor;
+use std::f32::consts::PI;
 
 #[derive(Component, PartialEq)]
 enum Direction {
@@ -19,7 +20,10 @@ struct Worm {
     head_y: f32,
     level: u8,
     max_level_reached: u8,
-    new_parts: Vec<Entity>,
+    parts: Vec<Entity>,
+    body_handle: Handle<Mesh>,
+    head_color_handle: Handle<StandardMaterial>,
+    body_color_handle: Handle<StandardMaterial>,
 }
 
 #[derive(Component)]
@@ -29,22 +33,27 @@ struct WormBodyPart;
 struct WormBodyPartBundle {
     worm_body_part: WormBodyPart,
     #[bundle]
-    sprite: SpriteBundle,
+    pbr: PbrBundle,
 }
 
 #[derive(Component)]
-struct Fruit;
+struct Fruit {
+    x: f32,
+    y: f32,
+    entity: Option<Entity>,
+    mesh_handle: Handle<Mesh>,
+}
 
 #[derive(Bundle)]
 struct FruitBundle {
-    fruit: Fruit,
     #[bundle]
-    sprite: SpriteBundle,
+    pbr: PbrBundle,
 }
 
 const WORM_HEAD_COLOR:Color = Color::WHITE;
 const WORM_BODY_COLOR:Color = Color::rgb(0.25, 0.25, 0.75);
 const WORM_BODY_SIZE:f32 = 25.;
+const FRUIT_RADIUS:f32 = 12.5;
 
 const BOARD_COLOR:Color = Color::rgba(0.75, 0.93, 0.56, 0.3);
 const BOARD_WIDTH:f32 = 875.;
@@ -69,15 +78,53 @@ fn main() {
         .run();
 }
 
-fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
-    commands.spawn_bundle(Camera2dBundle::default());
-
-    commands.spawn_bundle(SpriteBundle {
-        sprite: Sprite {
-            color: BOARD_COLOR,
-            custom_size: Some(Vec2::new(BOARD_WIDTH, BOARD_HEIGHT)),
+fn setup(
+    mut commands: Commands,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
+    asset_server: Res<AssetServer>,
+) {
+    // directional 'sun' light
+    const HALF_SIZE: f32 = 500.0;
+    commands.spawn_bundle(DirectionalLightBundle {
+        directional_light: DirectionalLight {
+            // Configure the projection to better fit the scene
+            shadow_projection: OrthographicProjection {
+                left: -HALF_SIZE,
+                right: HALF_SIZE,
+                bottom: -HALF_SIZE,
+                top: HALF_SIZE,
+                near: -10.0 * HALF_SIZE,
+                far: 10.0 * HALF_SIZE,
+                ..default()
+            },
+            shadows_enabled: true,
             ..default()
         },
+        transform: Transform {
+            translation: Vec3::new(0.0, 0.0, 300.0),
+            rotation: Quat::from_rotation_x(-PI / 4.),
+            ..default()
+        },
+        ..default()
+    });
+
+    commands.spawn_bundle(Camera3dBundle {
+        transform: Transform::from_xyz(0.0, -500.0, 750.0).looking_at(Vec3::ZERO, Vec3::Z),
+        ..default()
+    });
+
+    // Board
+    commands.spawn_bundle(PbrBundle {
+        mesh: meshes.add(Mesh::from(shape::Box {
+            max_x: BOARD_MAX_X,
+            min_x: BOARD_MIN_X,
+            max_y: BOARD_MAX_Y,
+            min_y: BOARD_MIN_Y,
+            max_z: 0.,
+            min_z: -50.,
+        })),
+        material: materials.add(BOARD_COLOR.into()),
         ..default()
     });
 
@@ -121,29 +168,17 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
         head_y: 0.,
         level: 1,
         max_level_reached: 1,
-        new_parts: Vec::new(),
+        parts: Vec::new(),
+        body_handle: meshes.add(Mesh::from(shape::Cube { size: WORM_BODY_SIZE })),
+        head_color_handle: materials.add(WORM_HEAD_COLOR.into()),
+        body_color_handle: materials.add(WORM_BODY_COLOR.into()),
     });
 
-    for n in 0..5 {
-        let color:Color = if n == 0 { WORM_HEAD_COLOR } else { WORM_BODY_COLOR };
-        commands.spawn_bundle(get_worm_body_part(color, 0., 0.));
-    }
-
-    let (color, fruit_x, fruit_y) = get_fruit_data();
-    commands.spawn_bundle(FruitBundle {
-        fruit: Fruit,
-        sprite: SpriteBundle {
-            sprite: Sprite {
-                color: color,
-                custom_size: Some(Vec2::new(WORM_BODY_SIZE, WORM_BODY_SIZE)),
-                ..default()
-            },
-            transform: Transform {
-                translation: Vec3 { x: fruit_x, y: fruit_y, z: 0. },
-                ..default()
-            },
-            ..default()
-        }
+    commands.spawn().insert(Fruit {
+        x: 0.,
+        y: 0.,
+        entity: None,
+        mesh_handle: meshes.add(Mesh::from(shape::Icosphere { radius: FRUIT_RADIUS, subdivisions: 2 })),
     });
 }
 
@@ -167,10 +202,11 @@ fn update_worm_position(
     time: Res<Time>,
     mut query_worm: Query<&mut Worm>,
     mut query_body: Query<&mut Transform, With<WormBodyPart>>,
-    mut query_fruit: Query<(&mut Sprite, &mut Transform), (With<Fruit>, Without<WormBodyPart>)>
+    mut query_fruit: Query<&mut Fruit>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
     let mut worm = query_worm.single_mut();
-    let (mut fruit_sprite, mut fruit_transform) = query_fruit.single_mut();
+    let mut fruit = query_fruit.single_mut();
 
     if worm.timer.tick(time.delta()).finished() {
         match worm.direction {
@@ -204,10 +240,11 @@ fn update_worm_position(
                 worm.level = 1;
                 worm.timer_duration = 0.5;
                 worm.timer = Timer::from_seconds(worm.timer_duration, true);
-                for entity in &worm.new_parts {
+                for entity in &worm.parts {
                     commands.entity(*entity).despawn();
                 }
-                worm.new_parts = Vec::new();
+                worm.parts = Vec::new();
+                break;
             }
             old_orig_x = transform.translation.x;
             old_orig_y = transform.translation.y;
@@ -217,20 +254,36 @@ fn update_worm_position(
             orig_y = old_orig_y;
         }
 
-        if worm.head_x == fruit_transform.translation.x && worm.head_y == fruit_transform.translation.y {
-            let (color, fruit_x, fruit_y) = get_fruit_data();
-            fruit_sprite.color = color;
-            fruit_transform.translation.x = fruit_x;
-            fruit_transform.translation.y = fruit_y;
-            worm.timer_duration = 0.9 * worm.timer_duration;
-            worm.timer = Timer::from_seconds(worm.timer_duration, true);
-            worm.level += 1;
-            if worm.level > worm.max_level_reached {
-                worm.max_level_reached = worm.level;
+        // Initial part of the body
+        if worm.parts.len() < 5 {
+            let is_head:bool = worm.parts.len() == 0;
+            let entity_id = commands.spawn_bundle(get_worm_body_part(is_head, &worm, orig_x, orig_y)).id();
+            worm.parts.push(entity_id);
+        }
+        if fruit.entity.is_none() || (worm.head_x == fruit.x && worm.head_y == fruit.y) {
+            if !fruit.entity.is_none() {
+                commands.entity(fruit.entity.unwrap()).despawn();
+
+                worm.timer_duration = 0.9 * worm.timer_duration;
+                worm.timer = Timer::from_seconds(worm.timer_duration, true);
+                worm.level += 1;
+                if worm.level > worm.max_level_reached {
+                    worm.max_level_reached = worm.level;
+                }
+                // we make the worm longer
+                let entity_id = commands.spawn_bundle(get_worm_body_part(false, &worm, orig_x, orig_y)).id();
+                worm.parts.push(entity_id);
             }
-            // we make the worm longer
-            let entity_id = commands.spawn_bundle(get_worm_body_part(WORM_BODY_COLOR, orig_x, orig_y)).id();
-            worm.new_parts.push(entity_id);
+
+            let (color, fruit_x, fruit_y) = get_fruit_data();
+            fruit.x = fruit_x;
+            fruit.y = fruit_y;
+            fruit.entity = Some(commands.spawn_bundle(get_fruit(
+                &fruit,
+                materials.add(color.into()),
+                fruit_x,
+                fruit_y,
+            )).id());
         }
     }
 }
@@ -265,17 +318,39 @@ fn update_label(query_worm: Query<&mut Worm>, mut query_text: Query<&mut Text>) 
     text.sections[1].value = max_level_reached;
 }
 
-fn get_worm_body_part(color: Color, x: f32, y: f32) -> WormBodyPartBundle {
+fn get_worm_body_part(
+    is_head:bool,
+    worm:&Worm,
+    x: f32,
+    y: f32,
+    ) -> WormBodyPartBundle {
+    let color_handle:&Handle<StandardMaterial> = if is_head { &worm.head_color_handle } else { &worm.body_color_handle };
     WormBodyPartBundle {
         worm_body_part: WormBodyPart,
-        sprite: SpriteBundle {
-            sprite: Sprite {
-                color: color,
-                custom_size: Some(Vec2::new(WORM_BODY_SIZE, WORM_BODY_SIZE)),
+        pbr: PbrBundle {
+            mesh: worm.body_handle.clone(),
+            material: color_handle.clone(),
+            transform: Transform {
+                translation: Vec3 { x: x, y: y, z: 12.5 },
                 ..default()
             },
+            ..default()
+        }
+    }
+}
+
+fn get_fruit(
+    fruit: &Fruit,
+    color_handle: Handle<StandardMaterial>,
+    x: f32,
+    y: f32,
+) -> FruitBundle {
+    FruitBundle {
+        pbr: PbrBundle {
+            mesh: fruit.mesh_handle.clone(),
+            material: color_handle,
             transform: Transform {
-                translation: Vec3 { x: x, y: y, z: 0. },
+                translation: Vec3 { x: x, y: y, z: 12.5 },
                 ..default()
             },
             ..default()
