@@ -37,11 +37,15 @@ struct WormBodyPartBundle {
 }
 
 #[derive(Component)]
-struct Fruit;
+struct Fruit {
+    x: f32,
+    y: f32,
+    entity: Option<Entity>,
+    mesh_handle: Handle<Mesh>,
+}
 
 #[derive(Bundle)]
 struct FruitBundle {
-    fruit: Fruit,
     #[bundle]
     pbr: PbrBundle,
 }
@@ -170,18 +174,11 @@ fn setup(
         body_color_handle: materials.add(WORM_BODY_COLOR.into()),
     });
 
-    let (color, fruit_x, fruit_y) = get_fruit_data();
-    commands.spawn_bundle(FruitBundle {
-        fruit: Fruit,
-        pbr: PbrBundle {
-            mesh: meshes.add(Mesh::from(shape::Icosphere { radius: FRUIT_RADIUS, subdivisions: 2 })),
-            material: materials.add(color.into()),
-            transform: Transform {
-                translation: Vec3 { x: fruit_x, y: fruit_y, z: 12.5 },
-                ..default()
-            },
-            ..default()
-        }
+    commands.spawn().insert(Fruit {
+        x: 0.,
+        y: 0.,
+        entity: None,
+        mesh_handle: meshes.add(Mesh::from(shape::Icosphere { radius: FRUIT_RADIUS, subdivisions: 2 })),
     });
 }
 
@@ -205,10 +202,11 @@ fn update_worm_position(
     time: Res<Time>,
     mut query_worm: Query<&mut Worm>,
     mut query_body: Query<&mut Transform, With<WormBodyPart>>,
-    mut query_fruit: Query<&mut Transform, (With<Fruit>, Without<WormBodyPart>)>
+    mut query_fruit: Query<&mut Fruit>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
     let mut worm = query_worm.single_mut();
-    let mut fruit_transform = query_fruit.single_mut();
+    let mut fruit = query_fruit.single_mut();
 
     if worm.timer.tick(time.delta()).finished() {
         match worm.direction {
@@ -261,20 +259,30 @@ fn update_worm_position(
             let entity_id = commands.spawn_bundle(get_worm_body_part(is_head, &worm, orig_x, orig_y)).id();
             worm.parts.push(entity_id);
         }
-        if worm.head_x == fruit_transform.translation.x && worm.head_y == fruit_transform.translation.y {
-            let (color, fruit_x, fruit_y) = get_fruit_data();
-            // fruit_sprite.color = color;
-            fruit_transform.translation.x = fruit_x;
-            fruit_transform.translation.y = fruit_y;
-            worm.timer_duration = 0.9 * worm.timer_duration;
-            worm.timer = Timer::from_seconds(worm.timer_duration, true);
-            worm.level += 1;
-            if worm.level > worm.max_level_reached {
-                worm.max_level_reached = worm.level;
+        if fruit.entity.is_none() || (worm.head_x == fruit.x && worm.head_y == fruit.y) {
+            if !fruit.entity.is_none() {
+                commands.entity(fruit.entity.unwrap()).despawn();
+
+                worm.timer_duration = 0.9 * worm.timer_duration;
+                worm.timer = Timer::from_seconds(worm.timer_duration, true);
+                worm.level += 1;
+                if worm.level > worm.max_level_reached {
+                    worm.max_level_reached = worm.level;
+                }
+                // we make the worm longer
+                let entity_id = commands.spawn_bundle(get_worm_body_part(false, &worm, orig_x, orig_y)).id();
+                worm.parts.push(entity_id);
             }
-            // we make the worm longer
-            let entity_id = commands.spawn_bundle(get_worm_body_part(false, &worm, orig_x, orig_y)).id();
-            worm.parts.push(entity_id);
+
+            let (color, fruit_x, fruit_y) = get_fruit_data();
+            fruit.x = fruit_x;
+            fruit.y = fruit_y;
+            fruit.entity = Some(commands.spawn_bundle(get_fruit(
+                &fruit,
+                materials.add(color.into()),
+                fruit_x,
+                fruit_y,
+            )).id());
         }
     }
 }
@@ -321,6 +329,25 @@ fn get_worm_body_part(
         pbr: PbrBundle {
             mesh: worm.body_handle.clone(),
             material: color_handle.clone(),
+            transform: Transform {
+                translation: Vec3 { x: x, y: y, z: 12.5 },
+                ..default()
+            },
+            ..default()
+        }
+    }
+}
+
+fn get_fruit(
+    fruit: &Fruit,
+    color_handle: Handle<StandardMaterial>,
+    x: f32,
+    y: f32,
+) -> FruitBundle {
+    FruitBundle {
+        pbr: PbrBundle {
+            mesh: fruit.mesh_handle.clone(),
+            material: color_handle,
             transform: Transform {
                 translation: Vec3 { x: x, y: y, z: 12.5 },
                 ..default()
