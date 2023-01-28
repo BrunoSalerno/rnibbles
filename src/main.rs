@@ -106,7 +106,7 @@ fn setup(
     });
 
     commands.spawn_bundle(Camera3dBundle {
-        transform: Transform::from_xyz(0.0, -700.0, 450.0).looking_at(Vec3::ZERO, Vec3::Z),
+        transform: Transform::from_xyz(0.0, -500.0, 750.0).looking_at(Vec3::ZERO, Vec3::Z),
         ..default()
     });
 
