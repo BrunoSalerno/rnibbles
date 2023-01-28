@@ -2,6 +2,14 @@ Rnibbles
 =======
 3D Nibbles game in Rust using the Bevy framework.
 
+Building and running
+--------------------
+
+Make sure Rust and Cargo are installed.
+
+1. Clone this repo
+2. Run `cargo run`
+
 Cross compilation
 -----------------
 1. Install [Cross](https://github.com/cross-rs/cross) and [cross-toolchains](https://github.com/cross-rs/cross-toolchains).
