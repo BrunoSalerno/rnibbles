@@ -1,6 +1,6 @@
 Rnibbles
 =======
-Nibbles game in Rust using the Bevy framework.
+3D Nibbles game in Rust using the Bevy framework.
 
 Cross compilation
 -----------------
