@@ -1,6 +1,7 @@
 use bevy::prelude::*;
 use rand::Rng;
 use random_color::RandomColor;
+use std::f32::consts::PI;
 
 #[derive(Component, PartialEq)]
 enum Direction {
@@ -69,15 +70,53 @@ fn main() {
         .run();
 }
 
-fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
-    commands.spawn_bundle(Camera2dBundle::default());
-
-    commands.spawn_bundle(SpriteBundle {
-        sprite: Sprite {
-            color: BOARD_COLOR,
-            custom_size: Some(Vec2::new(BOARD_WIDTH, BOARD_HEIGHT)),
+fn setup(
+    mut commands: Commands,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
+    asset_server: Res<AssetServer>,
+) {
+    // directional 'sun' light
+    const HALF_SIZE: f32 = 400.0;
+    commands.spawn_bundle(DirectionalLightBundle {
+        directional_light: DirectionalLight {
+            // Configure the projection to better fit the scene
+            shadow_projection: OrthographicProjection {
+                left: -HALF_SIZE,
+                right: HALF_SIZE,
+                bottom: -HALF_SIZE,
+                top: HALF_SIZE,
+                near: -10.0 * HALF_SIZE,
+                far: 10.0 * HALF_SIZE,
+                ..default()
+            },
+            shadows_enabled: true,
             ..default()
         },
+        transform: Transform {
+            translation: Vec3::new(0.0, -300.0, 300.0),
+            rotation: Quat::from_rotation_x(-PI / 4.),
+            ..default()
+        },
+        ..default()
+    });
+
+    commands.spawn_bundle(Camera3dBundle {
+        transform: Transform::from_xyz(0.0, 700.0, 450.0).looking_at(Vec3::ZERO, Vec3::Z),
+        ..default()
+    });
+
+    // plane
+    commands.spawn_bundle(PbrBundle {
+        mesh: meshes.add(Mesh::from(shape::Box {
+            max_x: BOARD_MAX_X,
+            min_x: BOARD_MIN_X,
+            max_y: BOARD_MAX_Y,
+            min_y: BOARD_MIN_Y,
+            max_z: 0.,
+            min_z: -50.,
+        })),
+        material: materials.add(BOARD_COLOR.into()),
         ..default()
     });
 
